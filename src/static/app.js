@@ -13,6 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Clear loading message
       activitiesList.innerHTML = "";
 
+      // Clear and reset dropdown options (keep the default option)
+      while (activitySelect.options.length > 1) {
+        activitySelect.remove(1);
+      }
+
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
         const activityCard = document.createElement("div");
@@ -51,38 +56,43 @@ document.addEventListener("DOMContentLoaded", () => {
         activitySelect.appendChild(option);
       });
 
-      // Add delete button event listeners
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', async (event) => {
-          event.preventDefault();
-          const activity = btn.getAttribute('data-activity');
-          const email = btn.getAttribute('data-email');
-
-          if (confirm(`Remove ${email} from ${activity}?`)) {
-            try {
-              const response = await fetch(
-                `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
-                { method: 'POST' }
-              );
-
-              if (response.ok) {
-                // Refresh activities list
-                fetchActivities();
-              } else {
-                const result = await response.json();
-                alert(result.detail || 'Failed to remove participant');
-              }
-            } catch (error) {
-              alert('Error removing participant');
-              console.error('Error:', error);
-            }
-          }
-        });
-      });
+      // Attach delete button listeners using event delegation
+      attachDeleteButtonListeners();
     } catch (error) {
       activitiesList.innerHTML = "<p>Failed to load activities. Please try again later.</p>";
       console.error("Error fetching activities:", error);
     }
+  }
+
+  // Function to handle delete button clicks using event delegation
+  function attachDeleteButtonListeners() {
+    activitiesList.addEventListener('click', async (event) => {
+      if (!event.target.classList.contains('delete-btn')) return;
+
+      event.preventDefault();
+      const activity = event.target.getAttribute('data-activity');
+      const email = event.target.getAttribute('data-email');
+
+      if (confirm(`Remove ${email} from ${activity}?`)) {
+        try {
+          const response = await fetch(
+            `/activities/${encodeURIComponent(activity)}/unregister?email=${encodeURIComponent(email)}`,
+            { method: 'POST' }
+          );
+
+          if (response.ok) {
+            // Refresh activities list
+            fetchActivities();
+          } else {
+            const result = await response.json();
+            alert(result.detail || 'Failed to remove participant');
+          }
+        } catch (error) {
+          alert('Error removing participant');
+          console.error('Error:', error);
+        }
+      }
+    });
   }
 
   // Handle form submission
